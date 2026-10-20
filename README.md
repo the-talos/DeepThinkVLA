@@ -146,6 +146,20 @@ pip install fix_windows_build.zip
 pip install -r requirements.txt
 ```
 
+### How to run the same on Intel's XPU
+Skip the `torch`, `torchvision` and `torchaudio` pins in `requirements.txt` and install the XPU wheels instead. Inference needs `transformers==4.48.1`, the other packages of the requirements file that the imports pull in (for example `datasets`, `peft`, `jsonlines`, `termcolor`, `draccus`, `einops`) and no flash-attn.
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/xpu
+pip install transformers==4.48.1 "datasets<4" peft jsonlines termcolor draccus einops sentencepiece
+```
+Run the evaluation with the same arguments as `scripts/eval.sh`, selecting the card with `ZE_AFFINITY_MASK` instead of `CUDA_VISIBLE_DEVICES`:
+```bash
+ZE_AFFINITY_MASK=0 PYTHONPATH=src python -m experiments.run_libero_eval \
+    --pretrained_checkpoint yinchenghust/deepthinkvla_libero_cot_sft \
+    --num_images_in_input 2 --task_suite_name libero_10 --max_new_tokens 2048
+```
+`--device` defaults to the best available backend (XPU, then CUDA, then CPU); pass `--device xpu:0`, `cuda:0` or `cpu` to force one. The attention path is SDPA already, so no fallback is needed. The LIBERO simulator itself is not run on XPU, so the rollout loop still needs the simulator setup above.
+
 Configure optional logging backends (Weights & Biases, SwanLab) before launching experiments.
 
 ## 💾 Data & Checkpoints

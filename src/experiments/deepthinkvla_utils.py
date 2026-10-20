@@ -18,12 +18,12 @@ import textwrap
 from transformers import GenerationConfig
 from torchvision import transforms
 from sft.modeling_deepthinkvla import DeepThinkVLA
+from .device import resolve_device
 from dt_datasets.normalize import Unnormalize_Action, resolve_norm_stats_path
 from sft.constants import ACTION_PROPRIO_NORMALIZATION_TYPE, ACTION_MASK, NUM_ACTIONS_CHUNK, ACTION_DIM
 
 # Initialize important constants
 THINK_PREFIX = "First output the thinking process in <think></think> tags and then output the final action in <action></action>."
-DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 DEEPTHINKVLA_IMAGE_SIZE = 224  # Standard image size expected by DeepThinkVLA
 
 # Configure NumPy print settings
@@ -128,7 +128,7 @@ def get_vla(cfg) -> torch.nn.Module:
 
     vla.eval()
 
-    vla = vla.to(DEVICE)
+    vla = vla.to(resolve_device(getattr(cfg, "device", None)))
 
     unomrmalize_action = _get_unomrmalize_action(cfg.pretrained_checkpoint)
 
@@ -224,7 +224,7 @@ def get_vla_action(
             prompt = processor.tokenizer.additional_special_tokens[0] * len(image) + f"Task: {task_label.lower()};"
 
         # Process primary image
-        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(DEVICE, dtype=torch.bfloat16)
+        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(vla.device, dtype=torch.bfloat16)
 
         # Generate action
         # Standard VLA output (single-image inputs, discrete actions)
@@ -282,7 +282,7 @@ def get_vla_action_mask_cot(
             prompt = processor.tokenizer.additional_special_tokens[0] * len(image) + f"Task: {task_label.lower()};"
 
         # Process primary image
-        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(DEVICE, dtype=torch.bfloat16)
+        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(vla.device, dtype=torch.bfloat16)
 
         # Generate action
         # Standard VLA output (single-image inputs, discrete actions)
@@ -433,7 +433,7 @@ def get_vla_action_mask_cot_random(
             prompt = processor.tokenizer.additional_special_tokens[0] * len(image) + f"Task: {task_label.lower()};"
 
         # Process primary image
-        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(DEVICE, dtype=torch.bfloat16)
+        inputs = processor(text = [prompt], images = image, return_tensors="pt").to(vla.device, dtype=torch.bfloat16)
 
         # Generate action
         # Standard VLA output (single-image inputs, discrete actions)

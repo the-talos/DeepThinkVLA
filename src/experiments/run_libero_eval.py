@@ -26,6 +26,7 @@ import torch
 import random
 import time
 
+from .device import manual_seed_all
 from .libero_utils import (
     get_libero_dummy_action,
     get_libero_env,
@@ -112,6 +113,8 @@ class GenerateConfig:
     swanlab_api_key: Optional[str] = ""
     swanlab_mode: str = 'disabled'                      # cloud-only, local, disabled
 
+    device: Optional[str] = None                     # "xpu", "cuda:0", "cpu"; None picks XPU, then CUDA, then CPU
+
     seed: int = 429                                    # Random Seed (for reproducibility)
 
     panel_width_px: int = 812                         # Width of side panel for displaying CoT text
@@ -126,7 +129,7 @@ def set_seed_everywhere(seed: int) -> None:
         seed: The random seed to use
     """
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
